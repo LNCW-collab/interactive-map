@@ -1,0 +1,73 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Interactive Contact Map</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-o9N1j7kS1xA7kBeurx8AVr+odEc3vLFpWZ4RZp0iCbY="
+    crossorigin=""
+  />
+  <style>
+    #map { height: 100vh; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-o8EeTzE1V+4p5cf0jwH6XyXLUpK2kZcyBz4R4zTO1QU="
+    crossorigin=""
+  ></script>
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json"></script>
+  <script>
+    const map = L.map('map').setView([37.8, -96], 4);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 6,
+      minZoom: 3,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Load state-to-contact JSON
+    fetch('state_contacts.json')
+      .then(response => response.json())
+      .then(data => {
+        const contacts = {};
+        data.forEach(entry => contacts[entry.state] = entry.contact);
+
+        // Load US GeoJSON borders
+        fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json')
+          .then(res => res.json())
+          .then(statesData => {
+            L.geoJson(statesData, {
+              style: {
+                weight: 1,
+                opacity: 1,
+                color: 'white',
+                fillOpacity: 0.7,
+                fillColor: '#007BFF'
+              },
+              onEachFeature: function (feature, layer) {
+                const stateName = feature.properties.name;
+                const contact = contacts[stateName] || "No contact listed";
+                layer.bindPopup(`<strong>${stateName}</strong><br/>Contact: ${contact}`);
+                layer.on({
+                  mouseover: function (e) {
+                    e.target.setStyle({ fillColor: '#0056b3' });
+                  },
+                  mouseout: function (e) {
+                    e.target.setStyle({ fillColor: '#007BFF' });
+                  }
+                });
+              }
+            }).addTo(map);
+          });
+      });
+  </script>
+</body>
+</html>
